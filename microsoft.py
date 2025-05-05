@@ -9,7 +9,7 @@ import random
 
 # TESTING_MODE=True → 10 s delays; False → real delays (60 s between sends, 1 day follow-ups)
 TESTING_MODE    = False
-INITIAL_GAP     = 10 if TESTING_MODE else 60      # seconds between initial emails
+INITIAL_GAP     = 10 if TESTING_MODE else 30      # seconds between initial emails
 FOLLOWUP_DELAY  = 10 if TESTING_MODE else 86400   # seconds (1 day) before each follow-up
 
 # Single sender configuration
