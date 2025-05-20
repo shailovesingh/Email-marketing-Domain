@@ -1,7 +1,6 @@
 import smtplib
 import time
 import random
-import threading
 import email.utils
 import pandas as pd
 from email.mime.multipart import MIMEMultipart
@@ -34,31 +33,26 @@ def spin_email_template(person_name, company, is_followup=False, followup_number
         "Recently, we’ve helped several businesses develop websites, enhance their search performance, and improve their social media efforts. Imagine a digital solution that aligns with your business needs."
     ])
     sentence3 = random.choice([
-        "I’m contacting you personally to share how our services may be of benefit. Please take a moment to watch the brief video I recorded, which explains our approach.",
-        "I’m contacting you directly to share more about our services. I’ve prepared a brief video introduction outlining our process.",
-        "I’m reaching out personally to share how our services may help. I’ve recorded a short video to introduce myself and explain our approach."
+        "I’m contacting you personally to share how our services may be of benefit. Please take a moment to consider our approach.",
+        "I’m contacting you directly to share more about our services. I’d love to discuss how we can help you grow online.",
+        "I’m reaching out personally to share how our services may help. Let’s explore what we can achieve together."
     ])
     extra = f"\nThis is follow-up #{followup_number}. Just checking in regarding my previous email." if is_followup and followup_number else ""
-    loom_link = "https://www.loom.com/share/1915f664b7f145f193d7b0fd6873ecb1"
 
-    text = f"""{random.choice(greetings)}
+    # Plain-text body
+    text = (
+        f"{random.choice(greetings)}\n\n"
+        f"{sentence1}\n\n"
+        f"{sentence2}\n\n"
+        f"{sentence3}\n\n"
+        f"{extra}\n\n"
+        "Looking forward to hearing from you.\n\n"
+        "Best regards,\n"
+        "Neal\n"
+        "https://filldesigngroup.in/\n"
+    )
 
-{sentence1}
-
-{sentence2}
-
-{sentence3}
-
-{extra}
-
-{loom_link}
-
-Looking forward to hearing from you.
-
-Best regards,
-Neal
-https://filldesigngroup.com/
-"""
+    # HTML body
     html = f"""
 <html><body>
   <p>{random.choice(greetings)}</p>
@@ -66,11 +60,6 @@ https://filldesigngroup.com/
   <p>{sentence2}</p>
   <p>{sentence3}</p>
   {f"<p>{extra}</p>" if extra else ""}
-  <div>
-    <a href="{loom_link}">
-      <img style="max-width:300px;" src="https://cdn.loom.com/sessions/thumbnails/1915f664b7f145f193d7b0fd6873ecb1-12ee91ac978e3ba5-full-play.gif" alt="Watch Video">
-    </a>
-  </div>
   <p>Looking forward to hearing from you.<br>Best regards,<br>Neal<br>
      <a href="https://filldesigngroup.in/">Fill Design Group</a></p>
 </body></html>
@@ -85,7 +74,7 @@ def choose_subject(company):
     ]).format(Company=company)
 
 def check_reply(email_address):
-    return False  # placeholder
+    return False  # placeholder; implement your own reply check logic
 
 def send_initial_email(row):
     company = row['company']
@@ -99,8 +88,10 @@ def send_initial_email(row):
     msg['From']    = sender['email']
     msg['To']      = to_addr
     msg['Subject'] = subject
-    msg_id = email.utils.make_msgid()
-    msg['Message-ID'] = msg_id
+    msg['Reply-To'] = sender['email']
+    msg['Date']    = email.utils.formatdate(localtime=True)
+    msg['X-Mailer'] = "FillDesignMailer/1.0"
+
     msg.attach(MIMEText(text, 'plain'))
     msg.attach(MIMEText(html, 'html'))
 
@@ -117,16 +108,20 @@ def send_initial_email(row):
         print(f"Error sending to {to_addr}: {e}")
         return None, None, None
 
-    return msg_id, subject, sender
+    return msg['Message-ID'], subject, sender
 
 def send_followup(to_addr, msg_id, name, company, num, sender, orig_subj):
     text, html = spin_email_template(name, company, True, num)
     msg = MIMEMultipart('alternative')
-    msg['From']         = sender['email']
-    msg['To']           = to_addr
-    msg['Subject']      = "Re: " + orig_subj
-    msg['In-Reply-To']  = msg_id
-    msg['References']   = msg_id
+    msg['From']        = sender['email']
+    msg['To']          = to_addr
+    msg['Subject']     = "Re: " + orig_subj
+    msg['In-Reply-To'] = msg_id
+    msg['References']  = msg_id
+    msg['Reply-To']    = sender['email']
+    msg['Date']        = email.utils.formatdate(localtime=True)
+    msg['X-Mailer']    = "FillDesignMailer/1.0"
+
     msg.attach(MIMEText(text, 'plain'))
     msg.attach(MIMEText(html, 'html'))
 
@@ -165,12 +160,21 @@ def send_emails(xlsx_path):
         if not msg_id:
             continue
 
-        threading.Thread(
-            target=followup_scheduler,
-            args=(email, msg_id, name, company, sender, subj)
-        ).start()
+        # In many environments, starting long-lived threads may fail.
+        # Instead, we call followup_scheduler synchronously if TESTING_MODE,
+        # or note that follow-ups must be handled separately in production.
+        if TESTING_MODE:
+            # In testing, followup_delay is short (10 seconds),
+            # so we can run followups sequentially.
+            followup_scheduler(email, msg_id, name, company, sender, subj)
+        else:
+            print(
+                "NOTE: follow-up emails are not scheduled automatically in this environment. "
+                "Run followups manually or use an external scheduler."
+            )
 
-        time.sleep(60)  # pause between sends
+        # Randomize pause to mimic human behavior
+        time.sleep(random.uniform(30, 60))
 
 if __name__ == "__main__":
     send_emails("test Email.xlsx")
