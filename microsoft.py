@@ -113,7 +113,10 @@ def send_initial_email(row):
     msg.attach(MIMEText(html, 'html'))
 
     try:
-        with smtplib.SMTP_SSL(sender['smtp_server'], sender['smtp_port'], timeout=10) as server:
+        with smtplib.SMTP(sender['smtp_server'], sender['smtp_port'], timeout=10) as server:
+            server.ehlo()
+            server.starttls()
+            server.ehlo()
             server.login(sender['email'], sender['password'])
             server.sendmail(sender['email'], to_addr, msg.as_string())
             print(f"Initial email sent to {to_addr} from {sender['email']}")
@@ -135,7 +138,10 @@ def send_followup(to_addr, msg_id, name, company, num, sender, orig_subj):
     msg.attach(MIMEText(html, 'html'))
 
     try:
-        with smtplib.SMTP_SSL(sender['smtp_server'], sender['smtp_port'], timeout=10) as server:
+        with smtplib.SMTP(sender['smtp_server'], sender['smtp_port'], timeout=10) as server:
+            server.ehlo()
+            server.starttls()
+            server.ehlo()
             server.login(sender['email'], sender['password'])
             server.sendmail(sender['email'], to_addr, msg.as_string())
             print(f"Follow-up #{num} sent to {to_addr}")
