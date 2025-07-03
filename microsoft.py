@@ -13,8 +13,8 @@ followup_delay = 10 if TESTING_MODE else 86400  # 86400 seconds = 1 day
 
 # List of sender accounts with their credentials and SMTP details
 SENDER_ACCOUNTS = [
-    {"email": "neal@filldesigngroup.net",      "password": "Fdg@9874#", "smtp_server": "smtp.office365.com", "smtp_port": 587},
-    {"email": "neal@filldesignprojects.com","password": "Fdg@9874#", "smtp_server": "smtp.office365.com", "smtp_port": 587},
+    {"email": "neal@filldesigngroup.net",      "password": "Newpassword@2025#", "smtp_server": "smtp.office365.com", "smtp_port": 587},
+    {"email": "neal@filldesignprojects.com","password": "Newpassword@2025#", "smtp_server": "smtp.office365.com", "smtp_port": 587},
     {"email": "neal@filldesignprojects.website",     "password": "Fdg@9874#", "smtp_server": "smtp.office365.com", "smtp_port": 587},
 ]
 
